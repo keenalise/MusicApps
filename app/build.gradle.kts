@@ -40,6 +40,20 @@ android {
     }
 }
 
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+}
+
+tasks.register("cleanKaptCache") {
+    doFirst {
+        delete("$buildDir/tmp/kapt3")
+        delete("$buildDir/generated")
+        println("✅ Cleaned Kapt cache")
+    }
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -60,9 +74,9 @@ dependencies {
     implementation("androidx.media3:media3-common:1.4.1")
 
     // Room for persistence
-    implementation("androidx.room:room-ktx:2.5.1")
-    implementation("androidx.room:room-runtime:2.5.1")
-    kapt("androidx.room:room-compiler:2.5.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.7.0")

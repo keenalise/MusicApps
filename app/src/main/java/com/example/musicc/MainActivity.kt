@@ -41,9 +41,11 @@ import com.example.musicc.ui.screens.HomeScreen
 import com.example.musicc.ui.screens.LibraryScreen
 import com.example.musicc.ui.screens.PlayerScreen
 import com.example.musicc.ui.screens.SearchScreen
+import com.example.musicc.ui.screens.SessionsScreen
 import com.example.musicc.ui.theme.MusiccTheme
 import com.example.musicc.ui.theme.SpotifyGray
 import com.example.musicc.viewmodel.MusicViewModel
+import com.example.musicc.viewmodel.SessionManagementViewModel
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -64,6 +66,7 @@ class MainActivity : ComponentActivity() {
 fun MusicApp(viewModel: MusicViewModel) {
     val context = LocalContext.current
     val navController = rememberNavController()
+    val sessionViewModel: SessionManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     var showPlayer by remember { mutableStateOf(false) }
 
     // Collect states from ViewModel
@@ -214,6 +217,19 @@ fun MusicApp(viewModel: MusicViewModel) {
                 }
                 composable(Screen.Library.route) {
                     LibraryScreen()
+                }
+                composable(Screen.Sessions.route) {
+                    SessionsScreen(
+                        viewModel = sessionViewModel,
+                        onSessionSelected = { sessionId ->
+                            // Handle session switch
+                            sessionViewModel.switchToSession(
+                                sessionId = sessionId,
+                                currentPosition = viewModel.getCurrentPosition(),
+                                playbackState = if (isPlaying) 2 else 0
+                            )
+                        }
+                    )
                 }
             }
         }
