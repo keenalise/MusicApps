@@ -10,14 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import com.example.musicc.model.Song
-import com.example.musicc.ui.theme.SpotifyGray
-import com.example.musicc.ui.theme.SpotifyLightGray
+import com.example.musicc.ui.theme.*
+
 
 @Composable
 fun PlayerScreen(
@@ -41,7 +42,7 @@ fun PlayerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(brush = Brush.verticalGradient(colors = listOf(BackgroundDark, BackgroundDarker)))
             .padding(16.dp)
     ) {
         // Top bar
@@ -54,7 +55,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = TextPrimary
                 )
             }
 
@@ -63,14 +64,14 @@ fun PlayerScreen(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
 
             IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "More",
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = TextPrimary
                 )
             }
         }
@@ -84,8 +85,12 @@ fun PlayerScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SpotifyGray),
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(PrimaryPurple.copy(alpha = 0.3f), PrimaryBlue.copy(alpha = 0.3f))
+                    )
+                ),
             contentScale = ContentScale.Crop
         )
 
@@ -103,7 +108,7 @@ fun PlayerScreen(
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimary
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -111,7 +116,7 @@ fun PlayerScreen(
                 Text(
                     text = song.artist,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = SpotifyLightGray
+                    color = TextSecondary
                 )
             }
 
@@ -119,7 +124,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Favorite",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                    tint = if (isFavorite) AccentPink else TextSecondary
                 )
             }
         }
@@ -135,9 +140,9 @@ fun PlayerScreen(
                     onSeek(newPosition)
                 },
                 colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.onBackground,
-                    activeTrackColor = MaterialTheme.colorScheme.onBackground,
-                    inactiveTrackColor = SpotifyGray
+                    thumbColor = PrimaryBlue,
+                    activeTrackColor = PrimaryBlue,
+                    inactiveTrackColor = SurfaceLight
                 )
             )
 
@@ -148,12 +153,12 @@ fun PlayerScreen(
                 Text(
                     text = formatTime(currentPosition),
                     style = MaterialTheme.typography.bodySmall,
-                    color = SpotifyLightGray
+                    color = TextTertiary
                 )
                 Text(
                     text = song.duration,
                     style = MaterialTheme.typography.bodySmall,
-                    color = SpotifyLightGray
+                    color = TextTertiary
                 )
             }
         }
@@ -170,7 +175,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = "Shuffle",
-                    tint = if (shuffleEnabled) MaterialTheme.colorScheme.primary else SpotifyLightGray,
+                    tint = if (shuffleEnabled) AccentCyan else TextTertiary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -179,20 +184,20 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.SkipPrevious,
                     contentDescription = "Previous",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = TextPrimary,
                     modifier = Modifier.size(36.dp)
                 )
             }
 
             FloatingActionButton(
                 onClick = onPlayPauseClick,
-                containerColor = MaterialTheme.colorScheme.onBackground,
+                containerColor = PrimaryBlue,
                 modifier = Modifier.size(72.dp)
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.background,
+                    tint = TextPrimary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -201,7 +206,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = "Next",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = TextPrimary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -213,7 +218,7 @@ fun PlayerScreen(
                         else -> Icons.Default.Repeat
                     },
                     contentDescription = "Repeat",
-                    tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else SpotifyLightGray,
+                    tint = if (repeatMode != Player.REPEAT_MODE_OFF) AccentCyan else TextTertiary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -231,7 +236,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.DeviceHub,
                     contentDescription = "Connect to a device",
-                    tint = SpotifyLightGray
+                    tint = TextTertiary
                 )
             }
 
@@ -239,7 +244,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Share",
-                    tint = SpotifyLightGray
+                    tint = TextTertiary
                 )
             }
         }
@@ -252,9 +257,9 @@ private fun formatTime(timeMs: Long): String {
     val hours = (timeMs / (1000 * 60 * 60))
 
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(java.util.Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
     }
 }
 

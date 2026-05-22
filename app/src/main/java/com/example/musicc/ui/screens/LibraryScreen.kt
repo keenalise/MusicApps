@@ -13,11 +13,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.musicc.model.Playlist
-import com.example.musicc.ui.theme.SpotifyGray
-import com.example.musicc.ui.theme.SpotifyLightGray
+import com.example.musicc.ui.theme.*
+
 
 @Composable
 fun LibraryScreen(
@@ -34,7 +35,7 @@ fun LibraryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(brush = Brush.verticalGradient(colors = listOf(BackgroundDark, BackgroundDarker)))
     ) {
         // Header
         Row(
@@ -49,14 +50,14 @@ fun LibraryScreen(
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
 
             IconButton(onClick = { /* Create new playlist */ }) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add playlist",
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = PrimaryBlue
                 )
             }
         }
@@ -71,17 +72,29 @@ fun LibraryScreen(
             FilterChip(
                 selected = true,
                 onClick = { },
-                label = { Text("Playlists") }
+                label = { Text("Playlists") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = PrimaryBlue.copy(alpha = 0.2f),
+                    selectedLabelColor = PrimaryBlue
+                )
             )
             FilterChip(
                 selected = false,
                 onClick = { },
-                label = { Text("Artists") }
+                label = { Text("Artists") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = SurfaceCard,
+                    labelColor = TextSecondary
+                )
             )
             FilterChip(
                 selected = false,
                 onClick = { },
-                label = { Text("Albums") }
+                label = { Text("Albums") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = SurfaceCard,
+                    labelColor = TextSecondary
+                )
             )
         }
 
@@ -119,8 +132,12 @@ fun PlaylistListItem(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(SpotifyGray)
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(PrimaryPurple.copy(alpha = 0.3f), PrimaryBlue.copy(alpha = 0.3f))
+                    )
+                )
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -131,7 +148,7 @@ fun PlaylistListItem(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -139,7 +156,7 @@ fun PlaylistListItem(
             Text(
                 text = "Playlist • ${playlist.description}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = SpotifyLightGray
+                color = TextSecondary
             )
         }
     }

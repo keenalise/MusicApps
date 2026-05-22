@@ -12,14 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.musicc.model.Playlist
 import com.example.musicc.model.Song
-import com.example.musicc.ui.theme.SpotifyGray
-import com.example.musicc.ui.theme.SpotifyLightGray
+import com.example.musicc.ui.theme.*
+
 
 @Composable
 fun HomeScreen(
@@ -42,7 +43,7 @@ fun HomeScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(brush = Brush.verticalGradient(colors = listOf(BackgroundDark, BackgroundDarker))),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         item {
@@ -51,7 +52,7 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onBackground,
+                color = TextPrimary,
                 modifier = Modifier.padding(16.dp)
             )
         }
@@ -64,7 +65,7 @@ fun HomeScreen(
                         .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    CircularProgressIndicator(color = PrimaryBlue)
                 }
             }
         } else if (songs.isEmpty()) {
@@ -72,7 +73,7 @@ fun HomeScreen(
                 Text(
                     text = "No songs found. Please add some music to your device.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = SpotifyLightGray,
+                    color = TextSecondary,
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -111,7 +112,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = TextPrimary,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -134,7 +135,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = TextPrimary,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -167,8 +168,8 @@ fun RecentlyPlayedItem(
     Row(
         modifier = modifier
             .height(60.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(SpotifyGray)
+            .clip(RoundedCornerShape(8.dp))
+            .background(SurfaceCard)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -178,7 +179,7 @@ fun RecentlyPlayedItem(
             contentDescription = "Album Art",
             modifier = Modifier
                 .size(60.dp)
-                .background(SpotifyLightGray.copy(alpha = 0.3f)),
+                .background(PrimaryBlue.copy(alpha = 0.2f)),
             contentScale = ContentScale.Crop
         )
 
@@ -187,7 +188,7 @@ fun RecentlyPlayedItem(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.SemiBold
             ),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = TextPrimary,
             modifier = Modifier.padding(horizontal = 12.dp),
             maxLines = 1
         )
@@ -212,8 +213,8 @@ fun SongListItem(
             contentDescription = "Album Art",
             modifier = Modifier
                 .size(56.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(SpotifyGray),
+                .clip(RoundedCornerShape(8.dp))
+                .background(SurfaceCard),
             contentScale = ContentScale.Crop
         )
 
@@ -225,7 +226,7 @@ fun SongListItem(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = MaterialTheme.colorScheme.onBackground,
+                color = TextPrimary,
                 maxLines = 1
             )
 
@@ -234,7 +235,7 @@ fun SongListItem(
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SpotifyLightGray,
+                color = TextSecondary,
                 maxLines = 1
             )
         }
@@ -242,7 +243,7 @@ fun SongListItem(
         Text(
             text = song.duration,
             style = MaterialTheme.typography.bodySmall,
-            color = SpotifyLightGray
+            color = TextTertiary
         )
     }
 }
@@ -264,8 +265,8 @@ fun PlaylistCard(
             contentDescription = "Playlist Cover",
             modifier = Modifier
                 .size(160.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SpotifyLightGray.copy(alpha = 0.2f)),
+                .clip(RoundedCornerShape(12.dp))
+                .background(PrimaryBlue.copy(alpha = 0.1f)),
             contentScale = ContentScale.Crop
         )
 
@@ -276,7 +277,7 @@ fun PlaylistCard(
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontWeight = FontWeight.Bold
             ),
-            color = MaterialTheme.colorScheme.onBackground,
+            color = TextPrimary,
             maxLines = 1
         )
 
@@ -285,7 +286,7 @@ fun PlaylistCard(
         Text(
             text = playlist.description,
             style = MaterialTheme.typography.bodySmall,
-            color = SpotifyLightGray,
+            color = TextSecondary,
             maxLines = 2
         )
     }

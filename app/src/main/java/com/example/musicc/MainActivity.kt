@@ -43,7 +43,8 @@ import com.example.musicc.ui.screens.PlayerScreen
 import com.example.musicc.ui.screens.SearchScreen
 import com.example.musicc.ui.screens.SessionsScreen
 import com.example.musicc.ui.theme.MusiccTheme
-import com.example.musicc.ui.theme.SpotifyGray
+import com.example.musicc.ui.theme.SurfaceCard
+
 import com.example.musicc.viewmodel.MusicViewModel
 import com.example.musicc.viewmodel.SessionManagementViewModel
 import kotlinx.coroutines.delay
@@ -222,11 +223,10 @@ fun MusicApp(viewModel: MusicViewModel) {
                     SessionsScreen(
                         viewModel = sessionViewModel,
                         onSessionSelected = { sessionId ->
-                            // Handle session switch
+                            // SessionManager automatically saves current position before switching
                             sessionViewModel.switchToSession(
                                 sessionId = sessionId,
-                                currentPosition = viewModel.getCurrentPosition(),
-                                playbackState = if (isPlaying) 2 else 0
+                                autoPlay = isPlaying
                             )
                         }
                     )
@@ -248,7 +248,7 @@ fun MiniPlayer(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .background(SpotifyGray)
+            .background(SurfaceCard)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
