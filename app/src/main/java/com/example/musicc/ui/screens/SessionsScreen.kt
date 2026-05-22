@@ -113,6 +113,8 @@ fun SessionsScreen(
                         session = session,
                         isActive = session.id == activeSession?.id,
                         onSelect = {
+                            // Switch to session with autoPlay enabled
+                            viewModel.switchToSession(session.id, autoPlay = true)
                             onSessionSelected(session.id)
                         },
                         onEdit = {

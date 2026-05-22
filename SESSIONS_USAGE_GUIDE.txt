@@ -1,0 +1,278 @@
+MUSIC PLAYER SESSIONS - IMPLEMENTATION GUIDE
+==============================================
+
+## Overview
+Your music player now supports MULTI-SESSION PLAYBACK QUEUES. Users can:
+- Create multiple independent sessions
+- Each session has its own queue and playback position
+- Switch between sessions seamlessly
+- The exact playback position is restored when switching back
+
+## How Sessions Work
+
+### Database Level
+- PlaybackSessionEntity: Stores session metadata (title, playback state, current index, position)
+- QueueItemEntity: Stores songs in each session's queue
+- Foreign key relationship ensures cascade delete
+
+### Architecture
+SessionManagementViewModel ←→ SessionManager ←→ SessionRepository ←→ Room Database
+                           ↓
+                      ExoPlayer (single instance)
+
+### Key Classes
+
+1. **SessionManager** (service/SessionManager.kt)
+   - Handles atomic session switching
+   - Saves active session state before switching
+   - Loads new session queue into ExoPlayer
+   - Restores exact playback position and state
+
+2. **SessionRepositoryImpl** (data/repo/SessionRepositoryImpl.kt)
+   - Persists sessions and queues to Room
+   - Manages active session flags
+   - Provides Flow-based observation
+
+3. **SessionManagementViewModel** (viewmodel/SessionManagementViewModel.kt)
+   - UI layer for session management
+   - Integrates with SessionManager
+   - Exposes session list and switching logic
+
+4. **SessionQueueManager** (service/SessionQueueManager.kt)
+   - Bridges music library (Song objects) with sessions
+   - Converts MediaStore songs to persistable QueueItems
+   - Validates URIs for safe playback
+
+## Usage Examples
+
+### 1. CREATE A NEW EMPTY SESSION
+```kotlin
+// From UI (SessionsScreen)
+val viewModel: SessionManagementViewModel by viewModel()
+viewModel.createNewSession("My Playlist")
+```
+
+### 2. CREATE SESSION WITH SONGS
+```kotlin
+// From ViewModel
+val sessionQueueManager = SessionQueueManager(sessionRepository)
+val sessionId = sessionQueueManager.createSessionWithSongs(
+    "Rock Songs",
+    listOf(song1, song2, song3)
+)
+```
+
+### 3. ADD SONGS TO EXISTING SESSION
+```kotlin
+sessionQueueManager.addSongsToSession(sessionId, listOf(song4, song5))
+```
+
+### 4. REPLACE SESSION QUEUE
+```kotlin
+sessionQueueManager.replaceSessionQueue(sessionId, newSongsList)
+```
+
+### 5. SWITCH BETWEEN SESSIONS
+```kotlin
+// This automatically:
+// - Saves current session's playback state
+// - Loads new session's queue into player
+// - Seeks to saved position
+// - Optionally starts playing
+viewModel.switchToSession(sessionId, autoPlay = true)
+```
+
+### 6. OBSERVE ALL SESSIONS
+```kotlin
+val allSessions: StateFlow<List<PlaybackSessionEntity>> = viewModel.allSessions
+val activeSession: StateFlow<PlaybackSessionEntity?> = viewModel.activeSession
+```
+
+### 7. DELETE A SESSION
+```kotlin
+viewModel.deleteSession(sessionId)
+```
+
+### 8. RENAME A SESSION
+```kotlin
+viewModel.renameSession(sessionId, "New Name")
+```
+
+## Flow Example: Create and Populate a Session
+
+```kotlin
+// In your fragment/activity or ViewModel
+
+// 1. Load all songs from device
+val musicViewModel: MusicViewModel by viewModel()
+musicViewModel.loadSongs()
+
+// 2. Observe loaded songs
+val allSongs = musicViewModel.allSongs.collectAsStateWithLifecycle()
+
+// 3. Create session with songs
+val sessionViewModel: SessionManagementViewModel by viewModel()
+val sessionId = sessionViewModel.sessionRepository.createSession(
+    "My Favorites",
+    allSongs.value.take(20) // First 20 songs
+)
+
+// 4. Switch to this session
+sessionViewModel.switchToSession(sessionId, autoPlay = true)
+
+// 5. Now user can switch to other sessions and return
+sessionViewModel.switchToSession(otherSessionId, autoPlay = false)
+
+// 6. Switch back - exact position is restored
+sessionViewModel.switchToSession(sessionId, autoPlay = true)
+```
+
+## UI Integration
+
+### SessionsScreen.kt
+The SessionsScreen Composable provides full UI for:
+- List all sessions
+- Create new sessions
+- Edit session names
+- Delete sessions
+- Switch active session
+
+```kotlin
+@Composable
+fun SessionsScreen(
+    viewModel: SessionManagementViewModel,
+    onSessionSelected: (sessionId: Long) -> Unit = {}
+) {
+    // Displays list of sessions
+    // Click to switch session
+    // FAB to create new session
+}
+```
+
+### Integrating into Main Navigation
+In MainActivity.kt:
+```kotlin
+composable(Screen.Sessions.route) {
+    SessionsScreen(
+        viewModel = sessionViewModel,
+        onSessionSelected = { sessionId ->
+            // Optional: navigate to player or auto-play
+        }
+    )
+}
+```
+
+## State Preservation
+
+### Automatic Saving
+When switching sessions, SessionManager automatically saves:
+- Current track index
+- Playback position (in milliseconds)
+- Playback state (PLAYING/PAUSED/STOPPED)
+
+### Manual Saving
+```kotlin
+sessionManager.saveActiveSessionState() // Explicit save if needed
+```
+
+## Security & Validation
+
+✓ Path Traversal Prevention: URIs validated against whitelisted schemes (content://, http://, https://)
+✓ Memory Safe: Single ExoPlayer instance, no leaks on session switch
+✓ URI Validation: All URIs checked before playback
+✓ Database Constraints: Foreign key cascades ensure data consistency
+
+## Common Patterns
+
+### Pattern 1: Load Music Library → Split into Sessions
+```kotlin
+val allSongs = repository.getAllSongs()
+val rockSongs = allSongs.filter { it.genre == "Rock" }
+val popSongs = allSongs.filter { it.genre == "Pop" }
+
+val rockSessionId = sessionQueueManager.createSessionWithSongs("Rock", rockSongs)
+val popSessionId = sessionQueueManager.createSessionWithSongs("Pop", popSongs)
+
+viewModel.switchToSession(rockSessionId, autoPlay = true)
+```
+
+### Pattern 2: Quick Mix Switching
+```kotlin
+// User creates multiple themed queues
+sessionViewModel.createNewSession("Workout") // User adds specific songs
+sessionViewModel.createNewSession("Sleep")
+sessionViewModel.createNewSession("Party")
+
+// Switch based on context
+when (timeOfDay) {
+    "morning" -> viewModel.switchToSession(workoutSessionId, true)
+    "night" -> viewModel.switchToSession(sleepSessionId, false)
+    "evening" -> viewModel.switchToSession(partySessionId, true)
+}
+```
+
+### Pattern 3: Resume from Notification
+```kotlin
+// When user taps notification
+val activeSessionId = sessionRepository.getActiveSessionId()
+if (activeSessionId != null) {
+    sessionManager.switchToSession(activeSessionId, autoPlay = true)
+    // Player resumes exactly where it left off
+}
+```
+
+## Testing Sessions
+
+### Unit Test Example
+```kotlin
+@Test
+fun testSessionSwitching() {
+    // Create session 1 with songs
+    val session1 = sessionRepo.createSession("Session1", songs1)
+    sessionManager.switchToSession(session1)
+    player.seekTo(session1, 30000L)
+
+    // Create session 2 with different songs
+    val session2 = sessionRepo.createSession("Session2", songs2)
+    sessionManager.switchToSession(session2)
+
+    // Switch back to session 1
+    sessionManager.switchToSession(session1)
+
+    // Verify position restored
+    assertEquals(30000L, player.currentPosition)
+}
+```
+
+## Troubleshooting
+
+### Sessions Not Showing
+- Check: Room database is initialized
+- Check: Permissions for READ_MEDIA_AUDIO granted
+- Check: SessionsScreen navigation added to NavHost
+
+### Session Switch Not Working
+- Check: ExoPlayer is properly initialized
+- Check: Songs have valid URIs
+- Check: SessionManager has active player instance
+
+### Position Not Restoring
+- Check: savePlaybackState() is called before switching
+- Check: currentIndex in QueueItem is correct
+- Check: ExoPlayer.prepare() is called after setMediaItems()
+
+## Performance Tips
+
+1. Use Flow.stateIn() for caching large session lists
+2. Lazy-load queue items for sessions with 100+ songs
+3. Use SessionQueueManager batching for adding 50+ songs
+4. Clear old sessions periodically to reduce DB size
+
+## Future Enhancements
+
+- Collaborative sessions (share queues)
+- Session templates (auto-generate by genre/artist)
+- Session analytics (playback stats per session)
+- Session backup/restore
+- Cross-device session sync
+
