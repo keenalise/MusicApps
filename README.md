@@ -1,4 +1,4 @@
-# Musicc - Local Music Player with Spotify UI
+# Musicc - Local Music Player with Multiple Music Sessions
 
 A fully functional Android music player app that plays MP3 files from your phone, featuring a beautiful Spotify-inspired UI built with Jetpack Compose.
 
