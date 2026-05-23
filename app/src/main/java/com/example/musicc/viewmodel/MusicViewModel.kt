@@ -135,21 +135,46 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private suspend fun ensureActiveSession(): Long {
+        val currentSession = sessionManager.currentSession.value
+        if (currentSession != null) return currentSession.id
+
+        val sessions = appProvider.sessionRepository.sessionsFlow().first()
+        val sessionId = sessions.find { it.title == "Default Session" }?.id 
+            ?: appProvider.sessionRepository.createSession("Default Session")
+        
+        sessionManager.switchToSession(sessionId)
+        return sessionId
+    }
+
     fun playSong(song: Song) {
         viewModelScope.launch {
-            var currentSession = sessionManager.currentSession.value
-            if (currentSession == null) {
-                // If no active session, find or create default session
-                val sessions = appProvider.sessionRepository.sessionsFlow().first()
-                val sessionId = sessions.find { it.title == "Default Session" }?.id 
-                    ?: appProvider.sessionRepository.createSession("Default Session")
-                
-                sessionManager.switchToSession(sessionId)
-                currentSession = sessionManager.currentSession.value
+            val sessionId = ensureActiveSession()
+            val queueItems = _allSongs.value.mapIndexed { index, s ->
+                QueueItem(
+                    mediaId = s.id,
+                    uri = s.uri.toString(),
+                    title = s.title,
+                    artist = s.artist,
+                    album = s.album,
+                    positionInQueue = index
+                )
             }
+            val startIndex = _allSongs.value.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+            sessionManager.replaceQueueSafe(sessionId, queueItems, startIndex, true)
+        }
+    }
 
-            currentSession?.let { session ->
-                val queueItems = _allSongs.value.mapIndexed { index, s ->
+    fun playPlaylist(playlist: PlaylistEntity) {
+        viewModelScope.launch {
+            val sessionId = ensureActiveSession()
+            val playlistSongs = appProvider.database.playlistDao().getSongsInPlaylist(playlist.id)
+            val songIds = playlistSongs.map { it.songId }.toSet()
+            
+            val songsToPlay = _allSongs.value.filter { it.id in songIds }
+            
+            if (songsToPlay.isNotEmpty()) {
+                val queueItems = songsToPlay.mapIndexed { index, s ->
                     QueueItem(
                         mediaId = s.id,
                         uri = s.uri.toString(),
@@ -159,8 +184,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         positionInQueue = index
                     )
                 }
-                val startIndex = _allSongs.value.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
-                sessionManager.replaceQueueSafe(session.id, queueItems, startIndex, true)
+                sessionManager.replaceQueueSafe(sessionId, queueItems, 0, true)
             }
         }
     }

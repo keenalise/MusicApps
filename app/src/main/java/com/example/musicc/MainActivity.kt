@@ -215,7 +215,13 @@ fun MusicApp(viewModel: MusicViewModel) {
                     )
                 }
                 composable(Screen.Library.route) {
-                    LibraryScreen(viewModel = viewModel)
+                    LibraryScreen(
+                        viewModel = viewModel,
+                        onPlaylistClick = { playlist ->
+                            viewModel.playPlaylist(playlist)
+                            showPlayer = true
+                        }
+                    )
                 }
                 composable(Screen.Sessions.route) {
                     SessionsScreen(
