@@ -6,13 +6,21 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PlaybackSessionEntity::class, QueueItemEntity::class],
-    version = 1,
+    entities = [
+        PlaybackSessionEntity::class, 
+        QueueItemEntity::class, 
+        SongMetadataEntity::class,
+        PlaylistEntity::class,
+        PlaylistSongEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playbackSessionDao(): PlaybackSessionDao
     abstract fun queueItemDao(): QueueItemDao
+    abstract fun songMetadataDao(): SongMetadataDao
+    abstract fun playlistDao(): PlaylistDao
 
     companion object {
         @Volatile
@@ -24,11 +32,12 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "musicc_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
 }
-

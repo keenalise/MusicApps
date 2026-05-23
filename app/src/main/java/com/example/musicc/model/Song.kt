@@ -11,7 +11,8 @@ data class Song(
     val durationMs: Long = 0L,
     val uri: Uri? = null,
     val albumArtUri: Uri? = null,
-    val imageRes: Int = 0 // Placeholder for album art
+    val imageRes: Int = 0,
+    val isFavorite: Boolean = false
 )
 
 data class Playlist(
@@ -21,4 +22,3 @@ data class Playlist(
     val imageRes: Int = 0,
     val songs: List<Song> = emptyList()
 )
-

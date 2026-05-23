@@ -5,6 +5,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicc.data.repo.ISessionRepository
 import com.example.musicc.data.repo.SessionRepositoryImpl
 import com.example.musicc.data.room.AppDatabase
+import com.example.musicc.repository.SongMetadataRepository
 import com.example.musicc.service.SessionManager
 import kotlinx.coroutines.MainScope
 
@@ -25,10 +26,14 @@ class AppProvider : Application() {
     lateinit var sessionManager: SessionManager
         private set
 
+    lateinit var metadataRepository: SongMetadataRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         database = AppDatabase.getDatabase(this)
         sessionRepository = SessionRepositoryImpl(database.playbackSessionDao(), database.queueItemDao())
+        metadataRepository = SongMetadataRepository(database.songMetadataDao(), database.playlistDao())
         
         player = ExoPlayer.Builder(this).build()
         sessionManager = SessionManager(sessionRepository, player, MainScope())

@@ -72,10 +72,8 @@ fun MusicApp(viewModel: MusicViewModel) {
     var showPlayer by remember { mutableStateOf(false) }
 
     // Collect states from ViewModel
-    val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
     val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val shuffleEnabled by viewModel.shuffleEnabled.collectAsStateWithLifecycle()
     val repeatMode by viewModel.repeatMode.collectAsStateWithLifecycle()
 
@@ -206,8 +204,7 @@ fun MusicApp(viewModel: MusicViewModel) {
             ) {
                 composable(Screen.Home.route) {
                     HomeScreen(
-                        songs = allSongs,
-                        isLoading = isLoading,
+                        viewModel = viewModel,
                         onSongClick = { song ->
                             viewModel.playSong(song)
                             showPlayer = true
