@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,13 +35,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.musicc.model.Song
 import com.example.musicc.ui.navigation.Screen
 import com.example.musicc.ui.navigation.bottomNavItems
 import com.example.musicc.ui.screens.HomeScreen
 import com.example.musicc.ui.screens.LibraryScreen
 import com.example.musicc.ui.screens.PlayerScreen
-import com.example.musicc.ui.screens.SearchScreen
 import com.example.musicc.ui.screens.SessionsScreen
 import com.example.musicc.ui.theme.MusiccTheme
 import com.example.musicc.ui.theme.SurfaceCard
@@ -213,9 +214,6 @@ fun MusicApp(viewModel: MusicViewModel) {
                         }
                     )
                 }
-                composable(Screen.Search.route) {
-                    SearchScreen()
-                }
                 composable(Screen.Library.route) {
                     LibraryScreen()
                 }
@@ -254,11 +252,14 @@ fun MiniPlayer(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Album art placeholder
-        Box(
+        AsyncImage(
+            model = song.albumArtUri,
+            contentDescription = "Album Art",
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.surface),
+            contentScale = ContentScale.Crop
         )
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -297,4 +298,3 @@ fun MiniPlayer(
         }
     }
 }
-
