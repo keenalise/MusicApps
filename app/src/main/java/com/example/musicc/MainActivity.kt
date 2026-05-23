@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -44,6 +45,7 @@ import com.example.musicc.ui.screens.LibraryScreen
 import com.example.musicc.ui.screens.PlayerScreen
 import com.example.musicc.ui.screens.SessionsScreen
 import com.example.musicc.ui.theme.MusiccTheme
+import com.example.musicc.ui.theme.PrimaryBlue
 import com.example.musicc.ui.theme.SurfaceCard
 
 import com.example.musicc.viewmodel.MusicViewModel
@@ -134,7 +136,8 @@ fun MusicApp(viewModel: MusicViewModel) {
                             song = song,
                             isPlaying = isPlaying,
                             onClick = { showPlayer = true },
-                            onPlayPauseClick = { viewModel.togglePlayPause() }
+                            onPlayPauseClick = { viewModel.togglePlayPause() },
+                            onFavoriteClick = { viewModel.toggleFavorite(song) }
                         )
                     }
                 }
@@ -212,7 +215,7 @@ fun MusicApp(viewModel: MusicViewModel) {
                     )
                 }
                 composable(Screen.Library.route) {
-                    LibraryScreen()
+                    LibraryScreen(viewModel = viewModel)
                 }
                 composable(Screen.Sessions.route) {
                     SessionsScreen(
@@ -237,6 +240,7 @@ fun MiniPlayer(
     isPlaying: Boolean,
     onClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -248,7 +252,7 @@ fun MiniPlayer(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Album art placeholder
+        // Album art
         AsyncImage(
             model = song.albumArtUri,
             contentDescription = "Album Art",
@@ -278,11 +282,11 @@ fun MiniPlayer(
             )
         }
 
-        IconButton(onClick = { /* Toggle favorite */ }) {
+        IconButton(onClick = onFavoriteClick) {
             Icon(
-                imageVector = Icons.Default.FavoriteBorder,
+                imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = "Favorite",
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = if (song.isFavorite) PrimaryBlue else MaterialTheme.colorScheme.onSurface
             )
         }
 

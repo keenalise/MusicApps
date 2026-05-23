@@ -8,29 +8,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.musicc.model.Playlist
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.musicc.data.room.PlaylistEntity
 import com.example.musicc.ui.theme.*
-
+import com.example.musicc.viewmodel.MusicViewModel
 
 @Composable
 fun LibraryScreen(
-    onPlaylistClick: (Playlist) -> Unit = {}
+    viewModel: MusicViewModel,
+    onPlaylistClick: (PlaylistEntity) -> Unit = {}
 ) {
-    val playlists = listOf(
-        Playlist("1", "Liked Songs", "125 songs"),
-        Playlist("2", "My Playlist #1", "Your episodes"),
-        Playlist("3", "Chill Vibes", "30 songs"),
-        Playlist("4", "Workout Mix", "45 songs"),
-        Playlist("5", "Road Trip", "60 songs"),
-    )
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -46,119 +45,149 @@ fun LibraryScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Your Library",
+                text = "Playlists",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
                 color = TextPrimary
             )
 
-            IconButton(onClick = { /* Create new playlist */ }) {
+            IconButton(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier.background(SurfaceCard, RoundedCornerShape(12.dp))
+            ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add playlist",
+                    contentDescription = "Create Playlist",
                     tint = PrimaryBlue
                 )
             }
         }
 
-        // Filter chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = true,
-                onClick = { },
-                label = { Text("Playlists") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = PrimaryBlue.copy(alpha = 0.2f),
-                    selectedLabelColor = PrimaryBlue
-                )
-            )
-            FilterChip(
-                selected = false,
-                onClick = { },
-                label = { Text("Artists") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = SurfaceCard,
-                    labelColor = TextSecondary
-                )
-            )
-            FilterChip(
-                selected = false,
-                onClick = { },
-                label = { Text("Albums") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = SurfaceCard,
-                    labelColor = TextSecondary
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Playlists List
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(playlists) { playlist ->
-                PlaylistListItem(
-                    playlist = playlist,
-                    onClick = { onPlaylistClick(playlist) }
-                )
+        if (playlists.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.PlaylistPlay,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = TextTertiary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No playlists yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextSecondary
+                    )
+                    TextButton(onClick = { showCreateDialog = true }) {
+                        Text("Create your first playlist", color = PrimaryBlue)
+                    }
+                }
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(playlists) { playlist ->
+                    PlaylistListItem(
+                        playlist = playlist,
+                        onClick = { onPlaylistClick(playlist) }
+                    )
+                }
             }
         }
+    }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("New Playlist") },
+            text = {
+                TextField(
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    placeholder = { Text("Playlist name") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = BackgroundDark,
+                        unfocusedContainerColor = BackgroundDark,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newPlaylistName.isNotBlank()) {
+                        viewModel.createPlaylist(newPlaylistName)
+                        newPlaylistName = ""
+                        showCreateDialog = false
+                    }
+                }) {
+                    Text("Create", color = PrimaryBlue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = SurfaceCard
+        )
     }
 }
 
 @Composable
 fun PlaylistListItem(
-    playlist: Playlist,
+    playlist: PlaylistEntity,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceCard)
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Playlist cover
+        // Playlist Icon/Art
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(56.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(
                     brush = Brush.linearGradient(
-                        colors = listOf(PrimaryPurple.copy(alpha = 0.3f), PrimaryBlue.copy(alpha = 0.3f))
+                        colors = listOf(PrimaryPurple, PrimaryBlue)
                     )
-                )
-        )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.PlaylistPlay,
+                contentDescription = null,
+                tint = TextPrimary,
+                modifier = Modifier.size(32.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Column {
             Text(
                 text = playlist.name,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
                 ),
                 color = TextPrimary
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Text(
-                text = "Playlist • ${playlist.description}",
+                text = "Playlist",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
         }
     }
 }
-

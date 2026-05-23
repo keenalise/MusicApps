@@ -44,7 +44,9 @@ fun HomeScreen(
     var songForOptions by remember { mutableStateOf<Song?>(null) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showPlaylistDialog by remember { mutableStateOf(false) }
+    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
+    var newPlaylistName by remember { mutableStateOf("") }
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -241,11 +243,19 @@ fun HomeScreen(
             onDismissRequest = { showPlaylistDialog = false },
             title = { Text("Add to Playlist") },
             text = {
-                Column {
-                    if (playlists.isEmpty()) {
-                        Text("No playlists found.", color = TextSecondary)
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    item {
+                        ListItem(
+                            headlineContent = { Text("Create new playlist", color = PrimaryBlue, fontWeight = FontWeight.Bold) },
+                            leadingContent = { Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue) },
+                            modifier = Modifier.clickable {
+                                showPlaylistDialog = false
+                                showCreatePlaylistDialog = true
+                            }
+                        )
+                        HorizontalDivider(color = SurfaceLight)
                     }
-                    playlists.forEach { playlist ->
+                    items(playlists) { playlist ->
                         ListItem(
                             headlineContent = { Text(playlist.name) },
                             modifier = Modifier.clickable {
@@ -262,6 +272,38 @@ fun HomeScreen(
                     showPlaylistDialog = false
                     songForOptions = null
                 }) { Text("Close") }
+            },
+            containerColor = SurfaceCard
+        )
+    }
+
+    // Create Playlist Dialog
+    if (showCreatePlaylistDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreatePlaylistDialog = false },
+            title = { Text("New Playlist") },
+            text = {
+                TextField(
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    placeholder = { Text("Playlist name") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(focusedContainerColor = BackgroundDark)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newPlaylistName.isNotBlank()) {
+                        viewModel.createPlaylist(newPlaylistName)
+                        newPlaylistName = ""
+                        showCreatePlaylistDialog = false
+                        // Show the add to playlist dialog again or just finish if we have the song
+                        showPlaylistDialog = true
+                    }
+                }) { Text("Create", color = PrimaryBlue) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreatePlaylistDialog = false }) { Text("Cancel") }
             },
             containerColor = SurfaceCard
         )
