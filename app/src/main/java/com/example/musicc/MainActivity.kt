@@ -68,22 +68,13 @@ class MainActivity : ComponentActivity() {
 fun MusicApp(viewModel: MusicViewModel) {
     val context = LocalContext.current
     val navController = rememberNavController()
-    val sessionViewModel: SessionManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     var showPlayer by remember { mutableStateOf(false) }
 
     val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val currentPosition by viewModel.currentPosition.collectAsStateWithLifecycle()
     val shuffleEnabled by viewModel.shuffleEnabled.collectAsStateWithLifecycle()
     val repeatMode by viewModel.repeatMode.collectAsStateWithLifecycle()
-
-    var currentPosition by remember { mutableStateOf(0L) }
-
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentPosition = viewModel.getCurrentPosition()
-            delay(1000)
-        }
-    }
 
     val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -215,6 +206,7 @@ fun MusicApp(viewModel: MusicViewModel) {
                     )
                 }
                 composable(Screen.Sessions.route) {
+                    val sessionViewModel: SessionManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
                     SessionsScreen(
                         viewModel = sessionViewModel,
                         onSessionSelected = { sessionId ->

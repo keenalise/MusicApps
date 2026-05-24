@@ -7,13 +7,17 @@ import com.example.musicc.data.repo.SessionRepositoryImpl
 import com.example.musicc.data.room.AppDatabase
 import com.example.musicc.repository.SongMetadataRepository
 import com.example.musicc.service.SessionManager
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Minimal Application provider to construct Room DB and repository.
  * Provides a single ExoPlayer and SessionManager instance for the entire app.
  */
 class AppProvider : Application() {
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     lateinit var database: AppDatabase
         private set
 
@@ -36,6 +40,6 @@ class AppProvider : Application() {
         metadataRepository = SongMetadataRepository(database.songMetadataDao(), database.playlistDao())
         
         player = ExoPlayer.Builder(this).build()
-        sessionManager = SessionManager(sessionRepository, player, MainScope())
+        sessionManager = SessionManager(sessionRepository, player, appScope)
     }
 }

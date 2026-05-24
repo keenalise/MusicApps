@@ -22,14 +22,14 @@ interface PlaybackSessionDao {
     fun observeSessionWithQueue(sessionId: Long): Flow<PlaybackSessionWithQueue?>
 
     @Insert
-    suspend fun insert(session: PlaybackSessionEntity): Long
+    fun insert(session: PlaybackSessionEntity): Long
 
     @Update
-    suspend fun update(session: PlaybackSessionEntity): Int
+    fun update(session: PlaybackSessionEntity): Int
 
     @Query("DELETE FROM playback_sessions WHERE id = :sessionId")
-    suspend fun delete(sessionId: Long): Int
+    fun delete(sessionId: Long): Int
 
     @Query("UPDATE playback_sessions SET is_active = 0 WHERE (:exceptId IS NULL) OR id != :exceptId")
-    suspend fun clearActiveFlagsExcept(exceptId: Long?): Int
+    fun clearActiveFlagsExcept(exceptId: Long?): Int
 }

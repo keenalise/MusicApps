@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.example.musicc.AppProvider
@@ -78,7 +79,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     val meta = metadata.find { it.songId == song.id }
                     song.copy(
                         title = meta?.customTitle ?: song.title,
-                        albumArtUri = meta?.customCoverUri?.let { Uri.parse(it) } ?: song.albumArtUri,
+                            albumArtUri = meta?.customCoverUri?.toUri() ?: song.albumArtUri,
                         isFavorite = meta?.isFavorite ?: false
                     )
                 }
@@ -118,6 +119,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun persistActiveSessionState() {
+        viewModelScope.launch {
+            try {
+                sessionManager.saveActiveSessionState()
+            } catch (_: Exception) {
+                // Keep playback responsive even if persistence briefly fails.
+            }
+        }
+    }
+
     fun loadSongs() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -137,8 +148,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (currentSession != null) return currentSession.id
 
         val sessions = appProvider.sessionRepository.sessionsFlow().first()
-        val sessionId = sessions.find { it.title == "Default Session" }?.id 
-            ?: appProvider.sessionRepository.createSession("Default Session")
+        val sessionId = sessions.find { it.title == "Session 1" }?.id 
+            ?: appProvider.sessionRepository.createSession("Session 1")
         
         sessionManager.switchToSession(sessionId)
         return sessionId
@@ -159,6 +170,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             val startIndex = _allSongs.value.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
             sessionManager.replaceQueueSafe(sessionId, queueItems, startIndex, true)
+            persistActiveSessionState()
         }
     }
 
@@ -186,6 +198,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 sessionManager.replaceQueueSafe(sessionId, queueItems, 0, true)
+                persistActiveSessionState()
             }
         }
     }
@@ -208,6 +221,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 val currentIndex = player.currentMediaItemIndex
                 val insertIndex = if (currentIndex == -1) 0 else currentIndex + 1
                 player.addMediaItems(insertIndex, mediaItems)
+                persistActiveSessionState()
             }
         }
     }
@@ -298,19 +312,29 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun togglePlayPause() {
         if (player.isPlaying) player.pause() else player.play()
+        persistActiveSessionState()
     }
 
-    fun skipToNext() { player.seekToNext() }
-    fun skipToPrevious() { player.seekToPrevious() }
+    fun skipToNext() {
+        player.seekToNext()
+        persistActiveSessionState()
+    }
+
+    fun skipToPrevious() {
+        player.seekToPrevious()
+        persistActiveSessionState()
+    }
     fun seekTo(positionMs: Long) {
         player.seekTo(positionMs)
         _currentPosition.value = positionMs
+        persistActiveSessionState()
     }
 
     fun toggleShuffle() {
         val next = !player.shuffleModeEnabled
         player.shuffleModeEnabled = next
         _shuffleEnabled.value = next
+        persistActiveSessionState()
     }
 
     fun toggleRepeat() {
@@ -321,8 +345,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         player.repeatMode = next
         _repeatMode.value = next
+        persistActiveSessionState()
     }
 
     fun getCurrentPosition(): Long = player.currentPosition
-    fun getDuration(): Long = player.duration
 }

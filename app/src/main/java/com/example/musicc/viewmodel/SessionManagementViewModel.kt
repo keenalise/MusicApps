@@ -37,7 +37,7 @@ class SessionManagementViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
             val sessions = sessionRepository.sessionsFlow().first()
             if (sessions.isEmpty()) {
-                val id = sessionRepository.createSession("Default Session")
+                val id = sessionRepository.createSession("Session 1")
                 sessionManager.switchToSession(id)
             } else if (sessionRepository.getActiveSessionId() == null) {
                 sessionManager.switchToSession(sessions.first().id)
@@ -112,7 +112,7 @@ class SessionManagementViewModel(application: Application) : AndroidViewModel(ap
                     if (remaining.isNotEmpty()) {
                         switchToSession(remaining.first().id)
                     } else {
-                        createNewSession("Default Session")
+                        createNewSession("Session 1")
                     }
                 }
             } catch (e: Exception) {

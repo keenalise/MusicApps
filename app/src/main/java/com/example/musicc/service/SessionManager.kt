@@ -110,11 +110,15 @@ class SessionManager(
                     player.setMediaItems(mediaItems, /* resetPosition= */ true)
                     player.prepare()
 
-                    val index = if (session.currentIndex in 0 until mediaItems.size) session.currentIndex else 0
-                    val position = if (session.lastPositionMs >= 0) session.lastPositionMs else 0L
-                    player.seekTo(index, position)
+                    if (mediaItems.isNotEmpty()) {
+                        val index = if (session.currentIndex in 0 until mediaItems.size) session.currentIndex else 0
+                        val position = if (session.lastPositionMs >= 0) session.lastPositionMs else 0L
+                        player.seekTo(index, position)
 
-                    if (autoPlay) player.play() else player.pause()
+                        if (autoPlay) player.play() else player.pause()
+                    } else {
+                        player.pause()
+                    }
 
                 } catch (_: Throwable) {
                     // ignore player operations failures in non-android/test env
@@ -149,9 +153,13 @@ class SessionManager(
                     try {
                         player.setMediaItems(mediaItems, /* resetPosition= */ true)
                         player.prepare()
-                        val idx = startIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0))
-                        player.seekTo(idx, 0L)
-                        if (autoPlay) player.play() else player.pause()
+                        if (mediaItems.isNotEmpty()) {
+                            val idx = startIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0))
+                            player.seekTo(idx, 0L)
+                            if (autoPlay) player.play() else player.pause()
+                        } else {
+                            player.pause()
+                        }
                     } catch (_: Throwable) { }
                 }
             }

@@ -12,13 +12,13 @@ interface QueueItemDao {
     fun observeQueue(sessionId: Long): Flow<List<QueueItemEntity>>
 
     @Insert
-    suspend fun insertAll(items: List<QueueItemEntity>): List<Long>
+    fun insertAll(items: List<QueueItemEntity>): List<Long>
 
     @Query("DELETE FROM queue_items WHERE session_id = :sessionId")
-    suspend fun clearQueue(sessionId: Long): Int
+    fun clearQueue(sessionId: Long): Int
 
     // Transaction-like operation wrapped in suspend
-    suspend fun replaceQueue(sessionId: Long, items: List<QueueItemEntity>) {
+    fun replaceQueue(sessionId: Long, items: List<QueueItemEntity>) {
         clearQueue(sessionId)
         if (items.isNotEmpty()) insertAll(items)
     }
