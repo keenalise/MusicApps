@@ -24,6 +24,8 @@ data class PlaylistEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
+    @ColumnInfo(name = "custom_cover_uri")
+    val customCoverUri: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 

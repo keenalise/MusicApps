@@ -25,7 +25,7 @@ import com.example.musicc.viewmodel.MusicViewModel
 @Composable
 fun LibraryScreen(
     viewModel: MusicViewModel,
-    onPlaylistClick: (PlaylistEntity) -> Unit = {}
+    onPlaylistClick: (Long) -> Unit = {}
 ) {
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -92,7 +92,7 @@ fun LibraryScreen(
                 items(playlists) { playlist ->
                     PlaylistListItem(
                         playlist = playlist,
-                        onClick = { onPlaylistClick(playlist) }
+                        onClick = { onPlaylistClick(playlist.id) }
                     )
                 }
             }
