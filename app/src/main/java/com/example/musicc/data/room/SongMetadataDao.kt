@@ -29,16 +29,28 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlists")
     fun observeAll(): Flow<List<PlaylistEntity>>
 
+    @Query("SELECT * FROM playlists WHERE id = :playlistId")
+    fun observeById(playlistId: Long): Flow<PlaylistEntity?>
+
     @Insert
     suspend fun insert(playlist: PlaylistEntity): Long
+
+    @Update
+    suspend fun update(playlist: PlaylistEntity)
 
     @Delete
     suspend fun delete(playlist: PlaylistEntity)
 
     @Transaction
     @Query("SELECT * FROM playlist_songs WHERE playlistId = :playlistId")
+    fun observeSongsInPlaylist(playlistId: Long): Flow<List<PlaylistSongEntity>>
+
+    @Query("SELECT * FROM playlist_songs WHERE playlistId = :playlistId")
     suspend fun getSongsInPlaylist(playlistId: Long): List<PlaylistSongEntity>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addSongToPlaylist(playlistSong: PlaylistSongEntity)
+
+    @Query("DELETE FROM playlist_songs WHERE playlistId = :playlistId AND songId = :songId")
+    suspend fun removeSongFromPlaylist(playlistId: Long, songId: String)
 }

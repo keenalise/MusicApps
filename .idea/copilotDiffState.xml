@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/app/src/main/java/com/example/musicc/data/room/AppDatabase.kt">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/app/src/main/java/com/example/musicc/data/room/AppDatabase.kt" />
+              <option name="originalContent" value="package com.example.musicc.data.room&#10;&#10;import android.content.Context&#10;import androidx.room.Database&#10;import androidx.room.Room&#10;import androidx.room.RoomDatabase&#10;&#10;@Database(&#10;    entities = [&#10;        PlaybackSessionEntity::class, &#10;        QueueItemEntity::class, &#10;        SongMetadataEntity::class,&#10;        PlaylistEntity::class,&#10;        PlaylistSongEntity::class&#10;    ],&#10;    version = 2,&#10;    exportSchema = false&#10;)&#10;abstract class AppDatabase : RoomDatabase() {&#10;    abstract fun playbackSessionDao(): PlaybackSessionDao&#10;    abstract fun queueItemDao(): QueueItemDao&#10;    abstract fun songMetadataDao(): SongMetadataDao&#10;    abstract fun playlistDao(): PlaylistDao&#10;&#10;    companion object {&#10;        @Volatile&#10;        private var INSTANCE: AppDatabase? = null&#10;&#10;        fun getDatabase(context: Context): AppDatabase {&#10;            return INSTANCE ?: synchronized(this) {&#10;                val instance = Room.databaseBuilder(&#10;                    context.applicationContext,&#10;                    AppDatabase::class.java,&#10;                    &quot;musicc_database&quot;&#10;                )&#10;                .fallbackToDestructiveMigration()&#10;                .build()&#10;                INSTANCE = instance&#10;                instance&#10;            }&#10;        }&#10;    }&#10;}&#10;" />
+              <option name="updatedContent" value="package com.example.musicc.data.room&#10;&#10;import android.content.Context&#10;import androidx.room.Database&#10;import androidx.room.Room&#10;import androidx.room.RoomDatabase&#10;&#10;@Database(&#10;    entities = [&#10;        PlaybackSessionEntity::class, &#10;        QueueItemEntity::class, &#10;        SongMetadataEntity::class,&#10;        PlaylistEntity::class,&#10;        PlaylistSongEntity::class&#10;    ],&#10;    version = 3,&#10;    exportSchema = false&#10;)&#10;abstract class AppDatabase : RoomDatabase() {&#10;    abstract fun playbackSessionDao(): PlaybackSessionDao&#10;    abstract fun queueItemDao(): QueueItemDao&#10;    abstract fun songMetadataDao(): SongMetadataDao&#10;    abstract fun playlistDao(): PlaylistDao&#10;&#10;    companion object {&#10;        @Volatile&#10;        private var INSTANCE: AppDatabase? = null&#10;&#10;        fun getDatabase(context: Context): AppDatabase {&#10;            return INSTANCE ?: synchronized(this) {&#10;                val instance = Room.databaseBuilder(&#10;                    context.applicationContext,&#10;                    AppDatabase::class.java,&#10;                    &quot;musicc_database&quot;&#10;                )&#10;                .fallbackToDestructiveMigration()&#10;                .build()&#10;                INSTANCE = instance&#10;                instance&#10;            }&#10;        }&#10;    }&#10;}&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

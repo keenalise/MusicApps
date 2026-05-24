@@ -13,6 +13,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.musicc.MainActivity
 import com.example.musicc.R
+import com.example.musicc.data.repo.SessionRepositoryImpl
+import com.example.musicc.data.room.AppDatabase
 import com.example.musicc.data.repo.ISessionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,9 +45,12 @@ class MusicMediaService : Service() {
         // create player
         player = ExoPlayer.Builder(this).build()
 
-        // repository must be created or injected - attempt to fetch from Application if available
+        // Resolve repository defensively so the service does not crash the whole process on startup.
         repository = (application as? com.example.musicc.AppProvider)?.sessionRepository
-            ?: throw IllegalStateException("SessionRepository not provided")
+            ?: SessionRepositoryImpl(
+                AppDatabase.getDatabase(applicationContext).playbackSessionDao(),
+                AppDatabase.getDatabase(applicationContext).queueItemDao()
+            )
 
         sessionManager = SessionManager(repository, player, serviceScope)
 

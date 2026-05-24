@@ -32,22 +32,20 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import coil.compose.AsyncImage
 import com.example.musicc.model.Song
 import com.example.musicc.ui.navigation.Screen
 import com.example.musicc.ui.navigation.bottomNavItems
-import com.example.musicc.ui.screens.HomeScreen
-import com.example.musicc.ui.screens.LibraryScreen
-import com.example.musicc.ui.screens.PlayerScreen
-import com.example.musicc.ui.screens.SessionsScreen
+import com.example.musicc.ui.screens.*
 import com.example.musicc.ui.theme.MusiccTheme
 import com.example.musicc.ui.theme.PrimaryBlue
 import com.example.musicc.ui.theme.SurfaceCard
-
 import com.example.musicc.viewmodel.MusicViewModel
 import com.example.musicc.viewmodel.SessionManagementViewModel
 import kotlinx.coroutines.delay
@@ -70,27 +68,14 @@ class MainActivity : ComponentActivity() {
 fun MusicApp(viewModel: MusicViewModel) {
     val context = LocalContext.current
     val navController = rememberNavController()
-    val sessionViewModel: SessionManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     var showPlayer by remember { mutableStateOf(false) }
 
-    // Collect states from ViewModel
     val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val currentPosition by viewModel.currentPosition.collectAsStateWithLifecycle()
     val shuffleEnabled by viewModel.shuffleEnabled.collectAsStateWithLifecycle()
     val repeatMode by viewModel.repeatMode.collectAsStateWithLifecycle()
 
-    // Track current position for progress bar
-    var currentPosition by remember { mutableStateOf(0L) }
-
-    // Update position every second when playing
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentPosition = viewModel.getCurrentPosition()
-            delay(1000)
-        }
-    }
-
-    // Permission handling
     val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
     } else {
@@ -99,10 +84,7 @@ fun MusicApp(viewModel: MusicViewModel) {
 
     var hasPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                permission
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -110,18 +92,11 @@ fun MusicApp(viewModel: MusicViewModel) {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasPermission = isGranted
-        if (isGranted) {
-            viewModel.loadSongs()
-        }
+        if (isGranted) viewModel.loadSongs()
     }
 
-    // Request permission and load songs
     LaunchedEffect(Unit) {
-        if (hasPermission) {
-            viewModel.loadSongs()
-        } else {
-            permissionLauncher.launch(permission)
-        }
+        if (hasPermission) viewModel.loadSongs() else permissionLauncher.launch(permission)
     }
 
     Scaffold(
@@ -129,7 +104,6 @@ fun MusicApp(viewModel: MusicViewModel) {
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column {
-                // Mini Player
                 currentSong?.let { song ->
                     if (!showPlayer) {
                         MiniPlayer(
@@ -142,7 +116,6 @@ fun MusicApp(viewModel: MusicViewModel) {
                     }
                 }
 
-                // Bottom Navigation
                 if (!showPlayer) {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.background,
@@ -153,12 +126,7 @@ fun MusicApp(viewModel: MusicViewModel) {
 
                         bottomNavItems.forEach { screen ->
                             NavigationBarItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = screen.icon,
-                                        contentDescription = screen.title
-                                    )
-                                },
+                                icon = { Icon(screen.icon, contentDescription = screen.title) },
                                 label = { Text(screen.title) },
                                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                                 onClick = {
@@ -171,8 +139,8 @@ fun MusicApp(viewModel: MusicViewModel) {
                                     }
                                 },
                                 colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    selectedIconColor = PrimaryBlue,
+                                    selectedTextColor = PrimaryBlue,
                                     unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                                     unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                                     indicatorColor = MaterialTheme.colorScheme.background
@@ -217,21 +185,32 @@ fun MusicApp(viewModel: MusicViewModel) {
                 composable(Screen.Library.route) {
                     LibraryScreen(
                         viewModel = viewModel,
-                        onPlaylistClick = { playlist ->
-                            viewModel.playPlaylist(playlist)
+                        onPlaylistClick = { playlistId ->
+                            navController.navigate(Screen.PlaylistDetail.createRoute(playlistId))
+                        }
+                    )
+                }
+                composable(
+                    route = Screen.PlaylistDetail.route,
+                    arguments = listOf(navArgument("playlistId") { type = NavType.LongType })
+                ) { backStackEntry ->
+                    val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: return@composable
+                    PlaylistDetailScreen(
+                        playlistId = playlistId,
+                        viewModel = viewModel,
+                        onBackClick = { navController.popBackStack() },
+                        onSongClick = { song ->
+                            viewModel.playSong(song)
                             showPlayer = true
                         }
                     )
                 }
                 composable(Screen.Sessions.route) {
+                    val sessionViewModel: SessionManagementViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
                     SessionsScreen(
                         viewModel = sessionViewModel,
                         onSessionSelected = { sessionId ->
-                            // SessionManager automatically saves current position before switching
-                            sessionViewModel.switchToSession(
-                                sessionId = sessionId,
-                                autoPlay = isPlaying
-                            )
+                            sessionViewModel.switchToSession(sessionId = sessionId, autoPlay = isPlaying)
                         }
                     )
                 }
@@ -258,7 +237,6 @@ fun MiniPlayer(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Album art
         AsyncImage(
             model = song.albumArtUri,
             contentDescription = "Album Art",
@@ -274,9 +252,7 @@ fun MiniPlayer(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.title,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )

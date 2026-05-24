@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.example.musicc.AppProvider
@@ -13,11 +14,7 @@ import com.example.musicc.domain.QueueItem
 import com.example.musicc.model.Song
 import com.example.musicc.repository.MusicRepository
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +24,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val sessionManager = appProvider.sessionManager
     private val player = appProvider.player
     private val metadataRepository = appProvider.metadataRepository
+    private val database = appProvider.database
 
     private val _rawSongs = MutableStateFlow<List<Song>>(emptyList())
     
@@ -81,7 +79,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     val meta = metadata.find { it.songId == song.id }
                     song.copy(
                         title = meta?.customTitle ?: song.title,
-                        albumArtUri = meta?.customCoverUri?.let { Uri.parse(it) } ?: song.albumArtUri,
+                            albumArtUri = meta?.customCoverUri?.toUri() ?: song.albumArtUri,
                         isFavorite = meta?.isFavorite ?: false
                     )
                 }
@@ -121,6 +119,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun persistActiveSessionState() {
+        viewModelScope.launch {
+            try {
+                sessionManager.saveActiveSessionState()
+            } catch (_: Exception) {
+                // Keep playback responsive even if persistence briefly fails.
+            }
+        }
+    }
+
     fun loadSongs() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -140,8 +148,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (currentSession != null) return currentSession.id
 
         val sessions = appProvider.sessionRepository.sessionsFlow().first()
-        val sessionId = sessions.find { it.title == "Default Session" }?.id 
-            ?: appProvider.sessionRepository.createSession("Default Session")
+        val sessionId = sessions.find { it.title == "Session 1" }?.id 
+            ?: appProvider.sessionRepository.createSession("Session 1")
         
         sessionManager.switchToSession(sessionId)
         return sessionId
@@ -162,17 +170,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             val startIndex = _allSongs.value.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
             sessionManager.replaceQueueSafe(sessionId, queueItems, startIndex, true)
+            persistActiveSessionState()
         }
     }
 
-    fun playPlaylist(playlist: PlaylistEntity) {
+    fun playPlaylist(playlist: PlaylistEntity, shuffle: Boolean = false) {
         viewModelScope.launch {
             val sessionId = ensureActiveSession()
-            val playlistSongs = appProvider.database.playlistDao().getSongsInPlaylist(playlist.id)
+            val playlistSongs = database.playlistDao().getSongsInPlaylist(playlist.id)
             val songIds = playlistSongs.map { it.songId }.toSet()
             
-            val songsToPlay = _allSongs.value.filter { it.id in songIds }
+            var songsToPlay = _allSongs.value.filter { it.id in songIds }
             
+            if (shuffle) {
+                songsToPlay = songsToPlay.shuffled()
+            }
+
             if (songsToPlay.isNotEmpty()) {
                 val queueItems = songsToPlay.mapIndexed { index, s ->
                     QueueItem(
@@ -185,7 +198,72 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 sessionManager.replaceQueueSafe(sessionId, queueItems, 0, true)
+                persistActiveSessionState()
             }
+        }
+    }
+
+    fun playPlaylistNext(playlistId: Long) {
+        viewModelScope.launch {
+            ensureActiveSession()
+            val playlistSongs = database.playlistDao().getSongsInPlaylist(playlistId)
+            val songIds = playlistSongs.map { it.songId }.toSet()
+            val songsToPlay = _allSongs.value.filter { it.id in songIds }
+
+            if (songsToPlay.isNotEmpty()) {
+                val mediaItems = songsToPlay.map { song ->
+                    MediaItem.Builder()
+                        .setUri(song.uri)
+                        .setMediaId(song.id)
+                        .setTag(QueueItem(mediaId = song.id, uri = song.uri.toString(), title = song.title, artist = song.artist))
+                        .build()
+                }
+                val currentIndex = player.currentMediaItemIndex
+                val insertIndex = if (currentIndex == -1) 0 else currentIndex + 1
+                player.addMediaItems(insertIndex, mediaItems)
+                persistActiveSessionState()
+            }
+        }
+    }
+
+    fun getPlaylistSongs(playlistId: Long): Flow<List<Song>> {
+        return database.playlistDao().observeSongsInPlaylist(playlistId).combine(_allSongs) { playlistSongs, all ->
+            val songIds = playlistSongs.map { it.songId }.toSet()
+            all.filter { it.id in songIds }
+        }
+    }
+
+    fun getPlaylistById(playlistId: Long): Flow<PlaylistEntity?> {
+        return database.playlistDao().observeById(playlistId)
+    }
+
+    fun deletePlaylist(playlist: PlaylistEntity) {
+        viewModelScope.launch {
+            database.playlistDao().delete(playlist)
+        }
+    }
+
+    fun renamePlaylist(playlistId: Long, newName: String) {
+        viewModelScope.launch {
+            val playlist = database.playlistDao().observeById(playlistId).first()
+            playlist?.let {
+                database.playlistDao().update(it.copy(name = newName))
+            }
+        }
+    }
+
+    fun updatePlaylistCover(playlistId: Long, uri: Uri) {
+        viewModelScope.launch {
+            val playlist = database.playlistDao().observeById(playlistId).first()
+            playlist?.let {
+                database.playlistDao().update(it.copy(customCoverUri = uri.toString()))
+            }
+        }
+    }
+
+    fun removeSongFromPlaylist(playlistId: Long, songId: String) {
+        viewModelScope.launch {
+            database.playlistDao().removeSongFromPlaylist(playlistId, songId)
         }
     }
 
@@ -234,19 +312,29 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun togglePlayPause() {
         if (player.isPlaying) player.pause() else player.play()
+        persistActiveSessionState()
     }
 
-    fun skipToNext() { player.seekToNext() }
-    fun skipToPrevious() { player.seekToPrevious() }
+    fun skipToNext() {
+        player.seekToNext()
+        persistActiveSessionState()
+    }
+
+    fun skipToPrevious() {
+        player.seekToPrevious()
+        persistActiveSessionState()
+    }
     fun seekTo(positionMs: Long) {
         player.seekTo(positionMs)
         _currentPosition.value = positionMs
+        persistActiveSessionState()
     }
 
     fun toggleShuffle() {
         val next = !player.shuffleModeEnabled
         player.shuffleModeEnabled = next
         _shuffleEnabled.value = next
+        persistActiveSessionState()
     }
 
     fun toggleRepeat() {
@@ -257,8 +345,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         player.repeatMode = next
         _repeatMode.value = next
+        persistActiveSessionState()
     }
 
     fun getCurrentPosition(): Long = player.currentPosition
-    fun getDuration(): Long = player.duration
 }
