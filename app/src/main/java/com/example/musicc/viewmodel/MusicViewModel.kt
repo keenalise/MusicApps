@@ -351,3 +351,4 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun getCurrentPosition(): Long = player.currentPosition
 }
 //gdgjdkgdkjgdhj
+//hdugdkjjfdiutskshgiugit
